@@ -37,9 +37,19 @@ class ATryingUE5Character : public ACharacter
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	class UInputAction* LookAction;
 
-public:
-	ATryingUE5Character();
+	/** Look Input Action */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	class UInputAction* DashAction;
+
 	
+
+public:
+
+	ATryingUE5Character();
+
+	// Parkour movement comp
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = CustomMovement)
+	class UParkourMovementComponent* ParkourMovement;
 
 protected:
 
@@ -62,5 +72,7 @@ public:
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 	/** Returns FollowCamera subobject **/
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
+	/** Returns ParkourMovement subobject **/
+	FORCEINLINE class UParkourMovementComponent* GetParkourComponent()const { return ParkourMovement; }
 };
 
