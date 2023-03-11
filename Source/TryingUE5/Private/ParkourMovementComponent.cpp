@@ -6,9 +6,12 @@
 #include "GameFramework/Character.h"
 #include "Components/InputComponent.h"
 #include "GameFramework/Controller.h"
+#include "NiagaraFunctionLibrary.h"
+#include "NiagaraComponent.h"
+#include "GameFramework/SpringArmComponent.h"
 
-#include "EnhancedInputComponent.h"
-#include "EnhancedInputSubsystems.h"
+//#include "EnhancedInputComponent.h"
+//#include "EnhancedInputSubsystems.h"
 
 // Sets default values for this component's properties
 UParkourMovementComponent::UParkourMovementComponent()
@@ -24,6 +27,9 @@ UParkourMovementComponent::UParkourMovementComponent()
 	bCanDash = true;
 	bCanAirJump = true;
 	bAirJumpVelocityOverride = true;
+	DashCameraLag = 10.0f;
+	InAirCameraLag = 10.0f;
+	GroundedCameraLag = 20.0f;
 	// ...
 }
 
@@ -46,6 +52,12 @@ void UParkourMovementComponent::BeginPlay()
 
 		// Set original grav scale
 		OriginalGravityScale = CharMovementComp->GravityScale;
+
+		// Set spring arm component
+		SpringArm = GetOwner()->FindComponentByClass<USpringArmComponent>();
+
+		// Set base camera lag speed
+		SpringArm->bEnableCameraLag = true;
 	}
 	
 	
@@ -64,11 +76,19 @@ void UParkourMovementComponent::TickComponent(float DeltaTime, ELevelTick TickTy
 		//CharMovementComp->Velocity += GetOwner()->GetActorForwardVector() * DashSpeed * DeltaTime;
 	}
 
+	// Camera lag enable or disable
+	if (SpringArm && CharMovementComp)
+	{
+		if (bIsDashing) { SpringArm->CameraLagSpeed = DashCameraLag; }
+		else if (CharMovementComp->IsFalling()) { SpringArm->CameraLagSpeed = InAirCameraLag; }
+		else if (!CharMovementComp->IsFalling()) { SpringArm->CameraLagSpeed = GroundedCameraLag; }
+	}
+
 	// ...
 
 }
 
-void UParkourMovementComponent::Dash()
+void UParkourMovementComponent::Dash(UNiagaraComponent* NiagaraComp)
 {
 	if (bCanDash && CharMovementComp)
 	{
@@ -82,8 +102,19 @@ void UParkourMovementComponent::Dash()
 		CharMovementComp->StopMovementImmediately();
 		CharMovementComp->GravityScale = 0.0f;
 
+		// Stop reading player input during dash
+		PlayerController = Cast<APlayerController>(Character->GetController());
+		if (PlayerController) { Character->DisableInput(PlayerController); }
+
+		// Set camera lag
+		if (SpringArm) { SpringArm->CameraLagSpeed = DashCameraLag; }
+
 		// Set dash velocity
 		CharMovementComp->Velocity += GetOwner()->GetActorForwardVector() * DashSpeed;
+
+		// Use effect if one exists
+		CurrentNiagaraCompForDash = NiagaraComp;
+		if (CurrentNiagaraCompForDash) { CurrentNiagaraCompForDash->SetActive(true, true); }
 
 		// Start timers
 		GetWorld()->GetTimerManager().SetTimer(TimerHandle_DashDuration, this, &UParkourMovementComponent::StopDashing, DashDuration);
@@ -116,15 +147,26 @@ void UParkourMovementComponent::StopDashing()
 		return;
 	}
 
+	// Reset Camera lag
+	if (SpringArm) { SpringArm->CameraLagSpeed = InAirCameraLag; }
+
 	// Stop momentum
 	CharMovementComp->StopMovementImmediately();
 
 	// Setting gravity scale back to OG value
 	CharMovementComp->GravityScale = OriginalGravityScale;
 
+	// Allow player inputs
+	PlayerController = Cast<APlayerController>(Character->GetController());
+	if (PlayerController) { Character->EnableInput(PlayerController); }
+
+	// Stop VFX
+	if (CurrentNiagaraCompForDash) { CurrentNiagaraCompForDash->SetActive(false, false); }
+
 	// Clear timer
 	GetWorld()->GetTimerManager().ClearTimer(TimerHandle_DashDuration);
 	
+	// Start timer Dash Cooldown
 	GetWorld()->GetTimerManager().SetTimer(TimerHandle_DashCooldown, this, &UParkourMovementComponent::ResetDash, DashCooldown);
 
 	// Set flags
@@ -142,6 +184,7 @@ void UParkourMovementComponent::Landed(const FHitResult& Hit)
 {
 	// Call jump reset function up on landing
 	AirJumpReset();
+	
 }
 
 void UParkourMovementComponent::AirJumpReset()

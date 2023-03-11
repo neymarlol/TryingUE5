@@ -32,6 +32,18 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float DashCooldown;
 
+	// Dash camera lag
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float DashCameraLag;
+
+	// In air camera lag
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float InAirCameraLag;
+
+	// Grounded CameraLag
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float GroundedCameraLag;
+
 	// Airjump strength and direction
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FVector AirJumpImpulse;
@@ -54,6 +66,16 @@ private:
 	// Original grav scale of char movement comp
 	float OriginalGravityScale;
 
+	// Vfx comp for dash
+	UPROPERTY()
+	class UNiagaraComponent* CurrentNiagaraCompForDash;
+	
+	// Spring arm component
+	UPROPERTY()
+	class USpringArmComponent* SpringArm;
+
+	// Player Controller
+	APlayerController* PlayerController;
 
 	// Timer handle for dash duration
 	UPROPERTY()
@@ -79,7 +101,7 @@ public:
 
 	// Dash function
 	UFUNCTION(BlueprintCallable)
-	void Dash();
+	void Dash(class UNiagaraComponent* NiagaraComp);
 
 	// Reset dash function
 	UFUNCTION(BlueprintCallable)

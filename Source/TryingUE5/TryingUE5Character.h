@@ -48,8 +48,12 @@ public:
 	ATryingUE5Character();
 
 	// Parkour movement comp
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = CustomMovement)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = CustomMovement, meta = (AllowPublicAccess = "true"), meta = (AllowPrivateAccess = "true"))
 	class UParkourMovementComponent* ParkourMovement;
+
+	// Niagra Dash component
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = CustomMovement, meta = (AllowPrivateAccess = "true"))
+	class UNiagaraComponent* NiagaraComp;
 
 protected:
 
@@ -73,6 +77,6 @@ public:
 	/** Returns FollowCamera subobject **/
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
 	/** Returns ParkourMovement subobject **/
-	FORCEINLINE class UParkourMovementComponent* GetParkourComponent()const { return ParkourMovement; }
+	//FORCEINLINE class UParkourMovementComponent* GetParkourComponent()const { return ParkourMovement; }
 };
 
